@@ -47,3 +47,11 @@ fn printBlogBooks(blog: *const blog_parser.Blog) void {
     }
     std.debug.print("-----------------------\n", .{});
 }
+
+test {
+    std.testing.refAllDecls(@This());
+    _ = @import("blog_parser.zig");
+    _ = @import("book_parser.zig");
+    _ = @import("edition_parser.zig");
+    _ = @import("json_parser.zig");
+}
