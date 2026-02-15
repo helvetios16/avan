@@ -18,7 +18,7 @@ pub const BookWithSection = struct {
 
 fn extractAttribute(html: []const u8, attr: []const u8) ?[]const u8 {
     var buf: [128]u8 = undefined;
-    
+
     // Try double quotes: attr="value"
     const double_pattern = std.fmt.bufPrint(&buf, "{s}=\"", .{attr}) catch return null;
     if (std.mem.indexOf(u8, html, double_pattern)) |start_idx| {
@@ -26,7 +26,7 @@ fn extractAttribute(html: []const u8, attr: []const u8) ?[]const u8 {
         const end_idx = std.mem.indexOf(u8, html[content_start..], "\"") orelse return null;
         return html[content_start .. content_start + end_idx];
     }
-    
+
     // Try single quotes: attr='value'
     const single_pattern = std.fmt.bufPrint(&buf, "{s}='", .{attr}) catch return null;
     if (std.mem.indexOf(u8, html, single_pattern)) |start_idx| {
@@ -34,7 +34,7 @@ fn extractAttribute(html: []const u8, attr: []const u8) ?[]const u8 {
         const end_idx = std.mem.indexOf(u8, html[content_start..], "'") orelse return null;
         return html[content_start .. content_start + end_idx];
     }
-    
+
     return null;
 }
 
@@ -330,4 +330,52 @@ test "extract metadata and mentioned books from a specific blog post" {
     // Validar el último libro
     try std.testing.expect(std.mem.startsWith(u8, blog.mentionedBooks[9].book.title, "Queen of Faces"));
     try std.testing.expect(std.mem.containsAtLeast(u8, blog.mentionedBooks[9].book.webUrl.?, 1, "228692419-queen-of-faces"));
+}
+
+test "extract metadata and mentioned books from a long blog post (144 books)" {
+    const allocator = std.testing.allocator;
+    var client = try @import("http_client.zig").HttpClient.init(allocator);
+    defer client.deinit();
+
+    const url = "https://www.goodreads.com/blog/show/3049-swoony-stories-144-romance-recommendations-for-valentine-s-reading";
+    const html = try client.fetch(url);
+    defer allocator.free(html);
+
+    var blog = (try parseBlogHtml(html, url, allocator)).?;
+    defer freeBlog(&blog, allocator);
+
+    try std.testing.expectEqualStrings("3049-swoony-stories-144-romance-recommendations-for-valentine-s-reading", blog.id);
+    try std.testing.expectEqualStrings("Swoony Stories: 144 Romance Recommendations for Valentine's Reading", blog.title);
+    try std.testing.expect(blog.description != null);
+    try std.testing.expect(std.mem.startsWith(u8, blog.description.?, "Love stories are the best kind of stories."));
+
+    try std.testing.expectEqual(@as(usize, 144), blog.mentionedBooks.len);
+
+    // Validar que los libros esperados estén presentes en la lista (en cualquier posición)
+    const expected_first_ids = [_][]const u8{ "220966494-heated-rivalry", "236669889-please-don-t-go", "53050272-ghosting" };
+    const expected_last_ids = [_][]const u8{ "216970870-serial-killer-games", "212806630-the-matchmaker", "218461924-alice-chen-s-reality-check" };
+
+    var found_first = [_]bool{false} ** 3;
+    var found_last = [_]bool{false} ** 3;
+
+    for (blog.mentionedBooks) |bws| {
+        const book_url = bws.book.webUrl.?;
+        for (expected_first_ids, 0..) |expected_id, i| {
+            if (!found_first[i] and std.mem.containsAtLeast(u8, book_url, 1, expected_id)) {
+                found_first[i] = true;
+            }
+        }
+        for (expected_last_ids, 0..) |expected_id, i| {
+            if (!found_last[i] and std.mem.containsAtLeast(u8, book_url, 1, expected_id)) {
+                found_last[i] = true;
+            }
+        }
+    }
+
+    for (found_first) |found| {
+        try std.testing.expect(found);
+    }
+    for (found_last) |found| {
+        try std.testing.expect(found);
+    }
 }
