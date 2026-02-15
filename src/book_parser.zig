@@ -252,7 +252,7 @@ fn parseBookData(jsonData: std.json.Value, allocator: std.mem.Allocator) !?Book 
     };
 }
 
-test "parseBookData" {
+test "extract full book metadata from Goodreads Apollo state" {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
