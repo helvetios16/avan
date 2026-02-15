@@ -12,7 +12,7 @@ pub fn main() !void {
     var client = try http_client.HttpClient.init(allocator);
     defer client.deinit();
 
-    const html = try client.fetch("https://goodreads.com/book/show/1");
+    const html = try client.fetch("https://goodreads.com/book/show/58613345-harry-potter-and-the-half-blood-prince");
     defer allocator.free(html);
 
     std.debug.print("Fetched {} bytes\n", .{html.len});
