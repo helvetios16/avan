@@ -1,6 +1,6 @@
 const std = @import("std");
 
-const Book = struct {
+pub const Book = struct {
     id: u64 = 0,
     legacyId: ?u32 = null,
     averageRating: ?f64 = null,

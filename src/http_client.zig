@@ -18,7 +18,7 @@ pub const HttpClient = struct {
     pub fn fetch(self: *HttpClient, url: []const u8) ![]const u8 {
         const uri = try std.Uri.parse(url);
 
-        var buffer_header: [1024]u8 = undefined;
+        var buffer_header: [8192]u8 = undefined;
 
         var request = try self.client.open(.GET, uri, .{
             .server_header_buffer = &buffer_header,
